@@ -1,38 +1,88 @@
-import numpy as np
+def LU(A, L, U, n):
+    for i in range(n):
+        for j in range(i, n):
+            L[j][i] = U[j][i] / U[i][i]
+
+    for k in range(1, n):
+        for i in range(k - 1, n):
+            for j in range(i, n):
+                L[j][i] = U[j][i] / U[i][i]
+
+        for i in range(k, n):
+            for j in range(k - 1, n):
+                U[i][j] = U[i][j] - L[i][k - 1] * U[k - 1][j]
 
 
-def lu_solve(A, b):
-    n = A.shape[0]
+def proisv(A, B, R, n):
+    for i in range(n):
+        for j in range(n):
+            for k in range(n):
+                R[i][j] += A[i][k] * B[k][j]
+
+
+def solve(A, B, X, n):
+    L = [[0] * n for _ in range(n)]
+    U = A.copy()
 
     # LU разложение
-    L = np.eye(n)
-    U = np.zeros((n, n))
-
-    for k in range(n):
-        U[k, k:] = A[k, k:] - L[k, :k] @ U[:k, k:]
-        L[(k + 1):, k] = (A[(k + 1):, k] - L[(k + 1):, :k] @ U[:k, k]) / U[k, k]
-
-    # Решение СЛАУ Ly = b
-    y = np.zeros(n)
     for i in range(n):
-        y[i] = b[i] - L[i, :i] @ y[:i]
+        for j in range(i, n):
+            L[j][i] = U[j][i] / U[i][i]
 
-    # Решение СЛАУ Ux = y
-    x = np.zeros(n)
+        for k in range(i + 1, n):
+            for j in range(i, n):
+                L[j][i] = U[j][i] / U[i][i]
+
+            for j in range(i + 1, n):
+                U[k][j] = U[k][j] - L[k][i] * U[i][j]
+
+    # Прямой ход
+    Y = [0] * n
+    for i in range(n):
+        Y[i] = B[i]
+        for j in range(i):
+            Y[i] -= L[i][j] * Y[j] 
+
+    # Обратный ход
     for i in range(n - 1, -1, -1):
-        x[i] = (y[i] - U[i, i + 1:] @ x[i + 1:]) / U[i, i]
+        X[i] = Y[i]
+        for j in range(i + 1, n):
+            X[i] -= U[i][j] * X[j]
+        X[i] /= U[i][i]
 
-    return x
+
+def show(A, n):
+    for i in range(n):
+        for j in range(n):
+            print("\t", A[i][j], "\t", end="")
+        print()
 
 
-# Пример использования
-A = np.array([[2, -1, 0],
-              [-1, 2, -1],
-              [0, -1, 2]])
+n = 3
+L = [[0] * n for _ in range(n)]
+R = [[0] * n for _ in range(n)]
 
-b = np.array([1, 0, 1])
+A = [[2, -1, 0],
+     [-1, 2, -1],
+     [0, -1, 2]]
 
-x = lu_solve(A, b)
-print("Решение СЛАУ с помощью LU разложения:")
-print(x)
+print("First matrix:")
+show(A, n)
+U = A.copy()
+LU(A, L, U, n)
+print("U matrix:")
+show(U, n)
+print("L matrix:")
+show(L, n)
+proisv(L, U, R, n)
+print("L*U matrix:")
+show(R, n)
 
+B = [1, 1, 1]  # Вектор свободных членов
+X = [0] * n    # Вектор неизвестных
+
+solve(A, B, X, n)
+
+print("Solution:")
+for i in range(n):
+    print("x{} = {}".format(i+1, X[i]))
